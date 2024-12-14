@@ -1,5 +1,4 @@
 VS_GO.exe
-.env
 vendor
 go.sum
 
