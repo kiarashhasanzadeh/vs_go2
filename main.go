@@ -56,7 +56,6 @@ func main() {
 
 	app.Get("/stream", func(c *fiber.Ctx) error {
 		// Use the stored video URL
-		fmt.Println(videoURL)
 		return streamVideo(c, videoURL)
 	})
 
@@ -66,12 +65,14 @@ func main() {
 }
 
 func streamVideo(c *fiber.Ctx, url string) error {
+	// Check if the URL parameter is empty
 	if url == "" {
 		return c.Status(fiber.StatusBadRequest).SendString("Bad Request: URL parameter missing")
 	}
 
 	fmt.Printf("Streaming video from URL: %s\n", url)
 
+	// Fetch the video from the given URL
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("Error fetching video: %v", err)
@@ -79,14 +80,17 @@ func streamVideo(c *fiber.Ctx, url string) error {
 	}
 	defer resp.Body.Close()
 
+	// Set necessary headers for the response
 	c.Set("Content-Type", resp.Header.Get("Content-Type"))
 	c.Set("Content-Disposition", "inline")
 
+	// Set Content-Length header if available
 	contentLength := resp.Header.Get("Content-Length")
 	if contentLength != "" {
 		c.Set(fiber.HeaderContentLength, contentLength)
 	}
 
+	// Handle range requests
 	rangeHeader := c.GetReqHeaders()["Range"]
 	if len(rangeHeader) > 0 {
 		parts := strings.SplitN(rangeHeader[0], "=", 2)
@@ -117,6 +121,7 @@ func streamVideo(c *fiber.Ctx, url string) error {
 		}
 	}
 
+	// Copy the response body to the client
 	_, copyErr := io.Copy(c.Response().BodyWriter(), resp.Body)
 	if copyErr != nil {
 		log.Printf("Error copying entire file to response: %v", copyErr)
